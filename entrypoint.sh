@@ -5,19 +5,20 @@ set -Eeuo pipefail
 cd /home/container
 
 printf '%s\n' \
-    "=================================" \
-    " Container starting..." \
-    "================================="
+    '=================================' \
+    ' Container starting...' \
+    '================================='
 
 printf 'Running as UID %s GID %s\n' "$(id -u)" "$(id -g)"
 
 if [[ -z "${STARTUP:-}" ]]; then
-    echo "ERROR: STARTUP is empty or not defined." >&2
+    printf 'ERROR: STARTUP is empty or not defined.\n' >&2
     exit 1
 fi
 
-# Convert Pterodactyl-style {{VARIABLE}} placeholders into ${VARIABLE}.
-# No eval is necessary.
+# Convert Pterodactyl placeholders such as {{SERVER_PORT}} to ${SERVER_PORT}.
+# The resulting command is executed by Bash so quoted values and shell syntax
+# are preserved, unlike the old unquoted "exec ${MODIFIED_STARTUP}" method.
 MODIFIED_STARTUP="$(
     printf '%s' "$STARTUP" |
         sed \
@@ -27,6 +28,5 @@ MODIFIED_STARTUP="$(
 
 printf ':/home/container$ %s\n' "$MODIFIED_STARTUP"
 
-# A shell is required because STARTUP is a command string.
-# Quoted arguments such as "My Server" are preserved correctly.
+# Replace the entrypoint process with the configured startup command.
 exec /bin/bash -c "$MODIFIED_STARTUP"
